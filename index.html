@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>손절 도우미</title>
+<style>
+/* ===========================================================
+   Design System : calm_financial_rationality
+   - 주조색  : 네이비 #1E293B
+   - 경고색  : 주황 #E8590C  (빨강 절대 금지 : 국내 증시에서 빨강 = 상승)
+   - 정상    : 청록/초록 #0F766E
+   - 보류    : 회색 #64748B
+   - 숫자    : tabular-nums
+   =========================================================== */
+:root{
+  --navy-900:#0F172A;
+  --navy-800:#1E293B;
+  --navy-700:#334155;
+  --slate-500:#64748B;
+  --slate-400:#94A3B8;
+  --slate-300:#CBD5E1;
+  --slate-200:#E2E8F0;
+  --slate-100:#F1F5F9;
+  --slate-50:#F8FAFC;
+  --white:#FFFFFF;
+
+  --alert:#E8590C;          /* 경고 = 주황 */
+  --alert-bg:#FFF4ED;
+  --alert-border:#FBC49B;
+
+  --safe:#0F766E;           /* 정상 = 청록 */
+  --safe-bg:#ECFDF5;
+  --safe-border:#A7E3D5;
+
+  --hold:#64748B;           /* 보류 = 회색 */
+  --hold-bg:#F1F5F9;
+  --hold-border:#CBD5E1;
+
+  --radius:10px;
+  --shadow-sm:0 1px 2px rgba(15,23,42,.06);
+  --shadow-md:0 8px 24px rgba(15,23,42,.12);
+  --shadow-lg:0 24px 64px rgba(15,23,42,.28);
+}
+*,*::before,*::after{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Malgun Gothic","맑은 고딕",
+              "Apple SD Gothic Neo","Noto Sans KR",Roboto,sans-serif;
+  background:var(--slate-100);
+  color:var(--navy-800);
+  font-size:14px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.num{
+  font-variant-numeric:tabular-nums;
+  font-feature-settings:"tnum" 1;
+  letter-spacing:.01em;
+}
+
+/* ---------- 상단 네비게이션 ---------- */
+.nav{
+  background:var(--navy-800);
+  color:var(--white);
+  position:sticky; top:0; z-index:50;
+  box-shadow:var(--shadow-sm);
+}
+.nav-inner{
+  max-width:1160px; margin:0 auto; padding:0 24px;
+  display:flex; align-items:center; gap:28px; min-height:58px;
+  flex-wrap:wrap;
+}
+.brand{display:flex; align-items:center; gap:9px; font-size:16px; font-weight:700; letter-spacing:-.01em;}
+.brand svg{flex:none;}
+.nav-tabs{display:flex; gap:4px; align-items:center;}
+.nav-tab{
+  padding:6px 12px; border-radius:7px; font-size:13px; font-weight:600;
+  color:var(--white); background:rgba(255,255,255,.14);
+}
+.nav-tab.disabled{
+  color:var(--slate-400); background:transparent; cursor:not-allowed;
+  display:flex; align-items:center; gap:5px;
+}
+.nav-tab.disabled::after{
+  content:"준비중"; font-size:10px; font-weight:700; letter-spacing:.02em;
+  padding:1px 5px; border-radius:4px; border:1px solid var(--navy-700); color:var(--slate-400);
+}
+.nav-note{
+  margin-left:auto; display:flex; align-items:center; gap:7px;
+  font-size:12px; color:var(--slate-300); padding:5px 0;
+}
+.nav-note svg{flex:none;}
+
+/* ---------- 레이아웃 ---------- */
+.wrap{max-width:1160px; margin:0 auto; padding:24px 24px 40px;}
+.page-head{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:18px;}
+.page-title{margin:0; font-size:21px; font-weight:700; letter-spacing:-.02em;}
+.page-sub{margin:4px 0 0; font-size:13px; color:var(--slate-500);}
+
+/* ---------- 요약 카드 ---------- */
+.summary{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:16px;}
+.card{
+  background:var(--white); border:1px solid var(--slate-200); border-radius:var(--radius);
+  padding:16px 18px; box-shadow:var(--shadow-sm); position:relative; overflow:hidden;
+}
+.card::before{content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--slate-300);}
+.card.is-alert::before{background:var(--alert);}
+.card.is-safe::before{background:var(--safe);}
+.card.is-hold::before{background:var(--hold);}
+.card-label{display:flex; align-items:center; gap:7px; font-size:13px; font-weight:600; color:var(--slate-500);}
+.card.is-alert .card-label{color:var(--alert);}
+.card.is-safe .card-label{color:var(--safe);}
+.card-value{margin-top:6px; font-size:28px; font-weight:700; letter-spacing:-.02em;}
+.card-value small{font-size:14px; font-weight:600; color:var(--slate-500); margin-left:3px;}
+.card-hint{margin-top:2px; font-size:12px; color:var(--slate-400);}
+
+/* ---------- 배너 ---------- */
+.banner{
+  display:flex; align-items:flex-start; gap:10px;
+  background:var(--hold-bg); border:1px solid var(--hold-border); border-left:4px solid var(--hold);
+  border-radius:var(--radius); padding:12px 16px; margin-bottom:16px; font-size:13px; color:var(--navy-700);
+}
+.banner svg{flex:none; margin-top:1px;}
+.banner strong{font-weight:700;}
+.banner.hidden{display:none;}
+
+/* ---------- 툴바 ---------- */
+.toolbar{display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;}
+.toolbar-meta{font-size:12.5px; color:var(--slate-500); margin-right:auto;}
+button{font-family:inherit; font-size:13px;}
+.btn{
+  display:inline-flex; align-items:center; gap:7px; cursor:pointer;
+  border-radius:8px; padding:9px 15px; font-weight:600; border:1px solid transparent;
+  transition:background .12s ease, border-color .12s ease, color .12s ease;
+}
+.btn:focus-visible{outline:2px solid var(--navy-700); outline-offset:2px;}
+.btn-primary{background:var(--navy-800); color:var(--white);}
+.btn-primary:hover{background:var(--navy-900);}
+.btn-ghost{background:var(--white); color:var(--navy-700); border-color:var(--slate-300);}
+.btn-ghost:hover{background:var(--slate-50); border-color:var(--slate-400);}
+.btn-mini{
+  background:var(--white); border:1px solid var(--slate-300); color:var(--navy-700);
+  border-radius:7px; padding:5px 10px; font-size:12.5px; font-weight:600; cursor:pointer;
+}
+.btn-mini:hover{background:var(--slate-50);}
+.btn-mini.danger{color:#9A3412; border-color:#F3C9AE;}
+.btn-mini.danger:hover{background:var(--alert-bg);}
+
+/* ---------- 테이블 ---------- */
+.table-shell{background:var(--white); border:1px solid var(--slate-200); border-radius:var(--radius); box-shadow:var(--shadow-sm); overflow:hidden;}
+.table-scroll{overflow-x:auto;}
+table{width:100%; border-collapse:collapse; min-width:940px;}
+thead th{
+  background:var(--slate-50); text-align:left; font-size:12px; font-weight:700; color:var(--slate-500);
+  letter-spacing:.02em; padding:11px 16px; border-bottom:1px solid var(--slate-200); white-space:nowrap;
+}
+tbody td{padding:13px 16px; border-bottom:1px solid var(--slate-100); vertical-align:middle;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr.row-alert{background:var(--alert-bg);}
+tbody tr.row-alert td:first-child{box-shadow:inset 3px 0 0 var(--alert);}
+.t-right{text-align:right;}
+.t-center{text-align:center;}
+.name{font-weight:700; font-size:14px; letter-spacing:-.01em;}
+.code{font-size:12px; color:var(--slate-400); margin-top:1px;}
+.mkt{
+  display:inline-block; padding:2px 8px; border-radius:5px; font-size:11.5px; font-weight:700;
+  background:var(--slate-100); color:var(--slate-500); border:1px solid var(--slate-200);
+}
+.price-main{font-weight:700;}
+.price-sub{font-size:11.5px; color:var(--slate-400); margin-top:1px;}
+.gap{font-weight:700;}
+.gap.down{color:var(--alert);}
+.gap.up{color:var(--safe);}
+.gap.none{color:var(--slate-400); font-weight:600;}
+
+.badge{
+  display:inline-flex; align-items:center; gap:6px; white-space:nowrap;
+  padding:4px 10px; border-radius:999px; font-size:12.5px; font-weight:700; border:1px solid;
+}
+.badge svg{flex:none;}
+.badge-alert{color:#9A3412; background:var(--alert-bg); border-color:var(--alert-border);}
+.badge-safe{color:#115E56; background:var(--safe-bg); border-color:var(--safe-border);}
+.badge-hold{color:#475569; background:var(--hold-bg); border-color:var(--hold-border);}
+.badge-note{display:block; font-size:11.5px; color:var(--slate-500); margin-top:4px; max-width:190px;}
+.actions{display:flex; gap:6px; justify-content:flex-end;}
+
+.empty{padding:56px 24px; text-align:center;}
+.empty-icon{margin-bottom:12px;}
+.empty-title{font-weight:700; font-size:15px;}
+.empty-desc{color:var(--slate-500); font-size:13px; margin-top:5px;}
+
+/* ---------- 푸터 ---------- */
+.footer{
+  margin-top:20px; display:flex; align-items:flex-start; gap:8px;
+  font-size:12.5px; color:var(--slate-500); padding:0 2px;
+}
+.footer svg{flex:none; margin-top:2px;}
+
+/* ---------- 모달 ---------- */
+.overlay{
+  position:fixed; inset:0; background:rgba(15,23,42,.5); z-index:100;
+  display:flex; align-items:flex-start; justify-content:center; padding:72px 20px 40px;
+  overflow-y:auto;
+}
+.overlay[hidden]{display:none;}
+.modal{
+  background:var(--white); border-radius:14px; box-shadow:var(--shadow-lg);
+  width:100%; max-width:470px; overflow:hidden;
+}
+.modal-head{padding:20px 22px 0;}
+.modal-title{margin:0; font-size:17px; font-weight:700; letter-spacing:-.02em;}
+.modal-desc{margin:5px 0 0; font-size:12.5px; color:var(--slate-500);}
+.modal-body{padding:18px 22px 4px;}
+.modal-foot{
+  padding:16px 22px 20px; display:flex; gap:9px; justify-content:flex-end;
+  border-top:1px solid var(--slate-100); margin-top:16px;
+}
+.field{margin-bottom:16px; position:relative;}
+label.lbl{display:block; font-size:12.5px; font-weight:700; color:var(--navy-700); margin-bottom:6px;}
+.req{color:var(--alert); margin-left:3px;}
+input[type=text]{
+  width:100%; padding:10px 12px; border:1px solid var(--slate-300); border-radius:8px;
+  font-family:inherit; font-size:14px; color:var(--navy-800); background:var(--white);
+}
+input[type=text]:focus{outline:none; border-color:var(--navy-700); box-shadow:0 0 0 3px rgba(30,41,59,.10);}
+input[type=text][readonly]{background:var(--slate-50); color:var(--slate-500);}
+input.invalid{border-color:var(--alert); box-shadow:0 0 0 3px rgba(232,89,12,.12);}
+.hint{font-size:12px; color:var(--slate-400); margin-top:6px;}
+.err{
+  display:none; align-items:center; gap:6px; margin-top:7px;
+  font-size:12.5px; font-weight:600; color:#9A3412;
+}
+.err.show{display:flex;}
+.err svg{flex:none;}
+
+/* 자동완성 */
+.ac{
+  position:absolute; left:0; right:0; top:100%; margin-top:5px; z-index:10;
+  background:var(--white); border:1px solid var(--slate-300); border-radius:9px;
+  box-shadow:var(--shadow-md); max-height:238px; overflow-y:auto; padding:4px;
+}
+.ac[hidden]{display:none;}
+.ac-item{
+  display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:7px; cursor:pointer;
+}
+.ac-item:hover,.ac-item.active{background:var(--slate-100);}
+.ac-name{font-weight:700; font-size:13.5px;}
+.ac-code{font-size:11.5px; color:var(--slate-400);}
+.ac-right{margin-left:auto; text-align:right;}
+.ac-price{font-size:12.5px; font-weight:700;}
+.ac-price-lbl{font-size:11px; color:var(--slate-400);}
+.ac-empty{padding:16px 10px; text-align:center; font-size:12.5px; color:var(--slate-400);}
+
+.picked{
+  display:flex; align-items:center; gap:10px; padding:11px 12px;
+  border:1px solid var(--slate-200); background:var(--slate-50); border-radius:9px;
+}
+.picked .ac-right{margin-left:auto;}
+.picked-clear{
+  margin-left:8px; border:none; background:transparent; cursor:pointer; color:var(--slate-500);
+  font-size:12.5px; font-weight:600; text-decoration:underline; padding:2px;
+}
+
+/* 확인 다이얼로그 */
+.confirm{max-width:430px;}
+.confirm-body{padding:22px 22px 4px; display:flex; gap:13px;}
+.confirm-ico{flex:none; width:38px; height:38px; border-radius:9px; display:flex; align-items:center; justify-content:center;}
+.confirm-ico.warn{background:var(--alert-bg); color:var(--alert);}
+.confirm-ico.neutral{background:var(--hold-bg); color:var(--slate-500);}
+.confirm-title{margin:0 0 5px; font-size:15.5px; font-weight:700;}
+.confirm-text{margin:0; font-size:13px; color:var(--navy-700); line-height:1.6;}
+.btn-warn{background:var(--alert); color:var(--white);}
+.btn-warn:hover{background:#D24F06;}
+
+@media (max-width:820px){
+  .summary{grid-template-columns:1fr;}
+  .nav-note{margin-left:0; width:100%; border-top:1px solid var(--navy-700); padding-top:8px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ 네비게이션 ============ -->
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="brand">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/>
+      </svg>
+      손절 도우미
+    </div>
+    <div class="nav-tabs">
+      <span class="nav-tab">손절 감시</span>
+      <span class="nav-tab disabled" aria-disabled="true" title="이번 단계에서는 제공하지 않습니다">리스크 계산기</span>
+      <span class="nav-tab disabled" aria-disabled="true" title="이번 단계에서는 제공하지 않습니다">원칙 실행 일지</span>
+    </div>
+    <div class="nav-note">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+      </svg>
+      투자 조언이 아닙니다 · 시세는 지연될 수 있습니다
+    </div>
+  </div>
+</nav>
+
+<main class="wrap">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">손절 기준가 감시</h1>
+      <p class="page-sub">미리 정한 기준가를 현재가가 이탈했는지 한눈에 확인합니다. (MVP · 모의 시세)</p>
+    </div>
+  </div>
+
+  <!-- ============ 요약 카드 ============ -->
+  <section class="summary" aria-label="상태 요약">
+    <div class="card is-alert">
+      <div class="card-label">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/>
+        </svg>
+        경보 발령
+      </div>
+      <div class="card-value num" id="sumAlert" aria-live="polite">0<small>건</small></div>
+      <div class="card-hint">현재가가 기준가 이하</div>
+    </div>
+    <div class="card is-safe">
+      <div class="card-label">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20 6L9 17l-5-5"/>
+        </svg>
+        안전 영역
+      </div>
+      <div class="card-value num" id="sumSafe" aria-live="polite">0<small>건</small></div>
+      <div class="card-hint">기준가 위에서 거래 중</div>
+    </div>
+    <div class="card is-hold">
+      <div class="card-label">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+        </svg>
+        판정 보류
+      </div>
+      <div class="card-value num" id="sumHold" aria-live="polite">0<small>건</small></div>
+      <div class="card-hint">장마감 · 거래정지</div>
+    </div>
+  </section>
+
+  <!-- ============ 장마감 배너 ============ -->
+  <div class="banner hidden" id="closeBanner" role="status">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+    </svg>
+    <span id="closeBannerText"></span>
+  </div>
+
+  <!-- ============ 툴바 ============ -->
+  <div class="toolbar">
+    <div class="toolbar-meta" id="lastSync">모의 시세 기준 · 수동 새로고침만 지원합니다</div>
+    <button class="btn btn-ghost" id="btnRefresh" type="button">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0115-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 01-15 6.7L3 16"/>
+      </svg>
+      새로고침
+    </button>
+    <button class="btn btn-primary" id="btnAdd" type="button">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 5v14"/><path d="M5 12h14"/>
+      </svg>
+      종목 추가
+    </button>
+  </div>
+
+  <!-- ============ 테이블 ============ -->
+  <div class="table-shell">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">종목명</th>
+            <th scope="col">시장</th>
+            <th scope="col" class="t-right">기준가</th>
+            <th scope="col" class="t-right">현재가</th>
+            <th scope="col" class="t-right">기준가 대비</th>
+            <th scope="col">상태</th>
+            <th scope="col" class="t-right">관리</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="emptyState" hidden>
+      <div class="empty-icon">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </div>
+      <div class="empty-title">아직 감시 중인 종목이 없습니다</div>
+      <div class="empty-desc">‘종목 추가’를 눌러 손절 기준가를 등록해 주세요.</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+    </svg>
+    <span>데이터는 이 브라우저에만 저장됩니다. 브라우저 데이터를 지우면 사라집니다.</span>
+  </div>
+</main>
+
+<!-- ============ 종목 추가 / 수정 모달 ============ -->
+<div class="overlay" id="modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head">
+      <h2 class="modal-title" id="modalTitle">종목 추가</h2>
+      <p class="modal-desc" id="modalDesc">감시할 종목과 손절 기준가를 등록합니다.</p>
+    </div>
+    <div class="modal-body">
+
+      <!-- 종목 검색 -->
+      <div class="field" id="fieldStock">
+        <label class="lbl" for="inpStock">종목 <span class="req">*</span></label>
+        <input type="text" id="inpStock" placeholder="종목명 또는 6자리 코드로 검색" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="acList">
+        <div class="ac" id="acList" role="listbox" hidden></div>
+        <div class="hint">예) 삼성전자, 005930, 에코프로</div>
+      </div>
+
+      <!-- 선택된 종목 (수정 모드 / 선택 후) -->
+      <div class="field" id="fieldPicked" hidden>
+        <label class="lbl">선택한 종목</label>
+        <div class="picked">
+          <div>
+            <div class="ac-name" id="pickedName">—</div>
+            <div class="ac-code num" id="pickedCode">—</div>
+          </div>
+          <div class="ac-right">
+            <div class="ac-price num" id="pickedPrice">—</div>
+            <div class="ac-price-lbl">참고 시세</div>
+          </div>
+          <button type="button" class="picked-clear" id="btnPickedClear">변경</button>
+        </div>
+      </div>
+
+      <!-- 종목 관련 에러 (검색/선택 상태와 무관하게 항상 보이는 위치) -->
+      <div class="err" id="errStock" style="margin:-8px 0 14px;" role="alert">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/>
+        </svg>
+        <span id="errStockText"></span>
+      </div>
+
+      <!-- 손절 기준가 -->
+      <div class="field">
+        <label class="lbl" for="inpPrice">손절 기준가 (원) <span class="req">*</span></label>
+        <input type="text" id="inpPrice" class="num" inputmode="numeric" placeholder="예) 63000" autocomplete="off">
+        <div class="hint">현재가가 이 가격 이하로 내려오면 ‘이탈’ 경보가 표시됩니다.</div>
+        <div class="err" id="errPrice">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/>
+          </svg>
+          <span id="errPriceText"></span>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="btnCancel" type="button">취소</button>
+      <button class="btn btn-primary" id="btnSave" type="button">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 확인 다이얼로그 ============ -->
+<div class="overlay" id="confirmBox" hidden>
+  <div class="modal confirm" role="alertdialog" aria-modal="true" aria-labelledby="cfTitle" aria-describedby="cfText">
+    <div class="confirm-body">
+      <div class="confirm-ico warn" id="cfIco">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/>
+        </svg>
+      </div>
+      <div>
+        <h3 class="confirm-title" id="cfTitle">확인</h3>
+        <p class="confirm-text" id="cfText"></p>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="cfNo" type="button">취소</button>
+      <button class="btn btn-warn" id="cfYes" type="button">계속 진행</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ===========================================================
+   1. Mock 데이터
+   =========================================================== */
+var STOCKS = [
+  { code:"005930", name:"삼성전자",        market:"KOSPI",  base: 71800 },
+  { code:"000660", name:"SK하이닉스",      market:"KOSPI",  base:183500 },
+  { code:"035420", name:"NAVER",           market:"KOSPI",  base:172000 },
+  { code:"035720", name:"카카오",          market:"KOSPI",  base: 42300 },
+  { code:"373220", name:"LG에너지솔루션",  market:"KOSPI",  base:378000 },
+  { code:"005380", name:"현대차",          market:"KOSPI",  base:245000 },
+  { code:"000270", name:"기아",            market:"KOSPI",  base: 98700 },
+  { code:"068270", name:"셀트리온",        market:"KOSPI",  base:183900 },
+  { code:"005490", name:"POSCO홀딩스",     market:"KOSPI",  base:332500 },
+  { code:"086520", name:"에코프로",        market:"KOSDAQ", base: 76400 },
+  { code:"247540", name:"에코프로비엠",    market:"KOSDAQ", base:152300 },
+  { code:"196170", name:"알테오젠",        market:"KOSDAQ", base:298500 },
+  { code:"028300", name:"HLB",             market:"KOSDAQ", base: 54200 },
+  { code:"058470", name:"리노공업",        market:"KOSDAQ", base:171400 },
+  { code:"000250", name:"삼천당제약",      market:"KOSDAQ", base:112800 }
+];
+
+/* UI 케이스 확인용 고정 지정 : 목록 3번째 = 장마감, 5번째 = 거래정지 */
+var IDX_MARKET_CLOSED = 2;   // 0-based
+var IDX_SUSPENDED     = 4;   // 0-based
+
+var STORAGE_KEY = "stopLossTracker_items";
+
+/* ===========================================================
+   2. 상태
+   =========================================================== */
+var items = [];          // localStorage에 저장되는 종목 목록
+var quotes = {};         // id -> { price, time }  (저장하지 않음)
+var editingId = null;    // 수정 중인 종목 id
+var picked = null;       // 모달에서 선택한 종목
+var acIndex = -1;        // 자동완성 커서
+var acData = [];
+var confirmCb = null;
+
+/* ===========================================================
+   3. 유틸
+   =========================================================== */
+function $(id){ return document.getElementById(id); }
+function uuid(){
+  if (window.crypto && crypto.randomUUID) { return crypto.randomUUID(); }
+  return "id-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,10);
+}
+function won(n){ return Number(n).toLocaleString("ko-KR"); }
+function nowTime(){
+  var d = new Date();
+  return ("0"+d.getHours()).slice(-2) + ":" + ("0"+d.getMinutes()).slice(-2) + ":" + ("0"+d.getSeconds()).slice(-2);
+}
+function todayLabel(){
+  var d = new Date();
+  return d.getFullYear() + "년 " + (d.getMonth()+1) + "월 " + d.getDate() + "일";
+}
+function esc(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+}
+
+/* ===========================================================
+   4. 저장소
+   =========================================================== */
+function load(){
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    var arr = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(arr)) { arr = []; }
+    items = arr.filter(function(it){
+      return it && it.id && it.code && it.name && Number(it.stopPrice) > 0;
+    });
+  } catch (e) {
+    items = [];
+  }
+}
+function save(){
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  } catch (e) {
+    console.warn("저장 실패", e);
+  }
+}
+
+/* ===========================================================
+   5. Mock 현재가 생성 : 기준가 대비 ±15% 랜덤
+   =========================================================== */
+function mockPrice(stopPrice){
+  var r = (Math.random() * 0.30) - 0.15;          // -0.15 ~ +0.15
+  var p = stopPrice * (1 + r);
+  return Math.max(1, Math.round(p / 10) * 10);    // 10원 단위 정리
+}
+function refreshQuotes(){
+  var t = nowTime();
+  var next = {};
+  for (var i = 0; i < items.length; i++) {
+    next[items[i].id] = { price: mockPrice(items[i].stopPrice), time: t };
+  }
+  quotes = next;
+  $("lastSync").textContent = "모의 시세 · " + t + " 조회 기준 (수동 새로고침만 지원)";
+}
+function ensureQuote(item){
+  if (!quotes[item.id]) {
+    quotes[item.id] = { price: mockPrice(item.stopPrice), time: nowTime() };
+  }
+  return quotes[item.id];
+}
+
+/* ===========================================================
+   6. 판정 로직
+   =========================================================== */
+function statusOf(item, index){
+  if (index === IDX_MARKET_CLOSED) { return "CLOSED"; }
+  if (index === IDX_SUSPENDED)     { return "SUSPENDED"; }
+  var q = ensureQuote(item);
+  return (q.price <= item.stopPrice) ? "BREACH" : "NORMAL";
+}
+
+/* ===========================================================
+   7. 렌더링
+   =========================================================== */
+var ICO = {
+  alert:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>',
+  safe :'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>',
+  moon :'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>',
+  pause:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>'
+};
+
+function render(){
+  var tbody = $("tbody");
+  var html = "";
+  var nAlert = 0, nSafe = 0, nHold = 0, hasClosed = false;
+
+  for (var i = 0; i < items.length; i++) {
+    var it = items[i];
+    var st = statusOf(it, i);
+    var q  = ensureQuote(it);
+
+    var priceCell, gapCell, badgeCell, rowCls = "";
+
+    if (st === "SUSPENDED") {
+      nHold++;
+      priceCell = '<div class="price-main num">—</div><div class="price-sub">거래정지</div>';
+      gapCell   = '<span class="gap none">—</span>';
+      badgeCell = '<span class="badge badge-hold">' + ICO.pause + '거래정지</span>' +
+                  '<span class="badge-note">거래가 재개되면 다시 판정합니다</span>';
+    } else if (st === "CLOSED") {
+      nHold++; hasClosed = true;
+      priceCell = '<div class="price-main num">' + won(q.price) + '</div><div class="price-sub">종가</div>';
+      gapCell   = gapHtml(q.price, it.stopPrice, true);
+      badgeCell = '<span class="badge badge-hold">' + ICO.moon + '장마감</span>' +
+                  '<span class="badge-note">장중 시세가 아니라 종가 기준입니다</span>';
+    } else if (st === "BREACH") {
+      nAlert++; rowCls = " class=\"row-alert\"";
+      priceCell = '<div class="price-main num">' + won(q.price) + '</div><div class="price-sub">' + q.time + ' 조회</div>';
+      gapCell   = gapHtml(q.price, it.stopPrice, false);
+      badgeCell = '<span class="badge badge-alert">' + ICO.alert + '이탈</span>' +
+                  '<span class="badge-note">손절 기준가 이탈</span>';
+    } else {
+      nSafe++;
+      priceCell = '<div class="price-main num">' + won(q.price) + '</div><div class="price-sub">' + q.time + ' 조회</div>';
+      gapCell   = gapHtml(q.price, it.stopPrice, false);
+      badgeCell = '<span class="badge badge-safe">' + ICO.safe + '정상</span>';
+    }
+
+    html += '<tr' + rowCls + ' data-id="' + esc(it.id) + '">' +
+      '<td><div class="name">' + esc(it.name) + '</div><div class="code num">' + esc(it.code) + '</div></td>' +
+      '<td><span class="mkt">' + esc(it.market) + '</span></td>' +
+      '<td class="t-right num price-main">' + won(it.stopPrice) + '</td>' +
+      '<td class="t-right num">' + priceCell + '</td>' +
+      '<td class="t-right num">' + gapCell + '</td>' +
+      '<td>' + badgeCell + '</td>' +
+      '<td class="t-right"><div class="actions">' +
+        '<button class="btn-mini" data-act="edit" data-id="' + esc(it.id) + '" type="button">수정</button>' +
+        '<button class="btn-mini danger" data-act="del" data-id="' + esc(it.id) + '" type="button">삭제</button>' +
+      '</div></td>' +
+    '</tr>';
+  }
+
+  tbody.innerHTML = html;
+  $("emptyState").hidden = items.length !== 0;
+
+  $("sumAlert").innerHTML = nAlert + '<small>건</small>';
+  $("sumSafe").innerHTML  = nSafe  + '<small>건</small>';
+  $("sumHold").innerHTML  = nHold  + '<small>건</small>';
+
+  var banner = $("closeBanner");
+  if (hasClosed) {
+    banner.classList.remove("hidden");
+    $("closeBannerText").innerHTML =
+      '<strong>장 마감</strong> · ' + todayLabel() + ' 종가 기준으로 표시 중입니다. 장중 시세와 다를 수 있습니다.';
+  } else {
+    banner.classList.add("hidden");
+  }
+}
+
+function gapHtml(cur, stop, muted){
+  var pct = ((cur - stop) / stop) * 100;
+  var sign = pct > 0 ? "+" : "";
+  var cls = muted ? "none" : (pct <= 0 ? "down" : "up");
+  return '<span class="gap ' + cls + '">' + sign + pct.toFixed(2) + '%</span>';
+}
+
+/* ===========================================================
+   8. 모달
+   =========================================================== */
+function openModal(id){
+  editingId = id || null;
+  picked = null;
+  clearErr();
+
+  if (editingId) {
+    var it = findItem(editingId);
+    if (!it) { return; }
+    picked = { code: it.code, name: it.name, market: it.market, base: baseOf(it.code) };
+    $("modalTitle").textContent = "종목 수정";
+    $("modalDesc").textContent  = "손절 기준가를 다시 설정합니다.";
+    $("fieldStock").hidden = true;
+    $("fieldPicked").hidden = false;
+    $("btnPickedClear").hidden = true;
+    $("inpPrice").value = String(it.stopPrice);
+    paintPicked();
+  } else {
+    $("modalTitle").textContent = "종목 추가";
+    $("modalDesc").textContent  = "감시할 종목과 손절 기준가를 등록합니다.";
+    $("fieldStock").hidden = false;
+    $("fieldPicked").hidden = true;
+    $("btnPickedClear").hidden = false;
+    $("inpStock").value = "";
+    $("inpPrice").value = "";
+  }
+
+  $("modal").hidden = false;
+  setTimeout(function(){
+    (editingId ? $("inpPrice") : $("inpStock")).focus();
+  }, 30);
+}
+function closeModal(){
+  $("modal").hidden = true;
+  hideAc();
+  clearErr();
+  editingId = null;
+  picked = null;
+}
+function baseOf(code){
+  for (var i=0;i<STOCKS.length;i++){ if (STOCKS[i].code === code) { return STOCKS[i].base; } }
+  return 0;
+}
+function findItem(id){
+  for (var i=0;i<items.length;i++){ if (items[i].id === id) { return items[i]; } }
+  return null;
+}
+function paintPicked(){
+  if (!picked) { return; }
+  $("pickedName").textContent  = picked.name;
+  $("pickedCode").textContent  = picked.code + " · " + picked.market;
+  $("pickedPrice").textContent = won(picked.base) + "원";
+}
+
+/* ---- 자동완성 ---- */
+function searchStocks(q){
+  q = (q || "").trim().toLowerCase();
+  if (!q) { return STOCKS.slice(0, 8); }
+  return STOCKS.filter(function(s){
+    return s.name.toLowerCase().indexOf(q) !== -1 || s.code.indexOf(q) !== -1;
+  }).slice(0, 8);
+}
+function showAc(list){
+  acData = list;
+  acIndex = -1;
+  var box = $("acList");
+  if (!list.length) {
+    box.innerHTML = '<div class="ac-empty">검색 결과가 없습니다</div>';
+  } else {
+    var h = "";
+    for (var i=0;i<list.length;i++){
+      var s = list[i];
+      h += '<div class="ac-item" role="option" data-i="' + i + '">' +
+             '<div><div class="ac-name">' + esc(s.name) + '</div>' +
+             '<div class="ac-code num">' + esc(s.code) + ' · ' + esc(s.market) + '</div></div>' +
+             '<div class="ac-right"><div class="ac-price num">' + won(s.base) + '원</div>' +
+             '<div class="ac-price-lbl">참고 시세</div></div>' +
+           '</div>';
+    }
+    box.innerHTML = h;
+  }
+  box.hidden = false;
+  $("inpStock").setAttribute("aria-expanded", "true");
+}
+function hideAc(){
+  $("acList").hidden = true;
+  $("inpStock").setAttribute("aria-expanded", "false");
+  acIndex = -1;
+}
+function pickStock(s){
+  picked = { code:s.code, name:s.name, market:s.market, base:s.base };
+  $("inpStock").value = s.name;
+  $("fieldStock").hidden = true;
+  $("fieldPicked").hidden = false;
+  $("btnPickedClear").hidden = false;
+  paintPicked();
+  hideAc();
+  clearErr();
+  $("inpPrice").focus();
+}
+
+/* ---- 에러 표시 ---- */
+function showErr(which, msg){
+  if (which === "stock") {
+    $("errStockText").textContent = msg;
+    $("errStock").classList.add("show");
+    $("inpStock").classList.add("invalid");
+  } else {
+    $("errPriceText").textContent = msg;
+    $("errPrice").classList.add("show");
+    $("inpPrice").classList.add("invalid");
+  }
+}
+function clearErr(){
+  $("errStock").classList.remove("show");
+  $("errPrice").classList.remove("show");
+  $("inpStock").classList.remove("invalid");
+  $("inpPrice").classList.remove("invalid");
+}
+
+/* ---- 확인 다이얼로그 ---- */
+function askConfirm(opt, cb){
+  $("cfTitle").textContent = opt.title;
+  $("cfText").textContent  = opt.text;
+  $("cfYes").textContent   = opt.yes || "계속 진행";
+  $("cfIco").className     = "confirm-ico " + (opt.tone === "neutral" ? "neutral" : "warn");
+  confirmCb = cb;
+  $("confirmBox").hidden = false;
+  setTimeout(function(){ $("cfYes").focus(); }, 30);
+}
+function closeConfirm(){
+  $("confirmBox").hidden = true;
+  confirmCb = null;
+}
+
+/* ===========================================================
+   9. 저장 (유효성 검사)
+   =========================================================== */
+function handleSave(){
+  clearErr();
+
+  /* (1) 종목 선택 여부 */
+  if (!picked) {
+    showErr("stock", "목록에서 종목을 선택하세요");
+    $("inpStock").focus();
+    return;
+  }
+
+  /* (2) 기준가 : 숫자 / 0보다 큰 값 */
+  var raw = $("inpPrice").value.replace(/,/g, "").trim();
+  if (raw === "" || !/^-?\d+(\.\d+)?$/.test(raw)) {
+    showErr("price", "0보다 큰 숫자를 입력하세요");
+    $("inpPrice").focus();
+    return;
+  }
+  var stopPrice = Number(raw);
+  if (!isFinite(stopPrice) || stopPrice <= 0) {
+    showErr("price", "0보다 큰 숫자를 입력하세요");
+    $("inpPrice").focus();
+    return;
+  }
+
+  /* (3) 중복 등록 차단 (추가 모드에서만) */
+  if (!editingId) {
+    for (var i=0;i<items.length;i++){
+      if (items[i].code === picked.code) {
+        showErr("stock", "이미 등록된 종목입니다. 기존 항목의 ‘수정’으로 기준가를 변경하세요.");
+        return;
+      }
+    }
+  }
+
+  /* (4) 기준가 >= 현재가 → 확인 후 진행 */
+  var cur = picked.base;
+  if (cur > 0 && stopPrice >= cur) {
+    askConfirm({
+      title: "즉시 이탈 알림이 발생합니다",
+      text : picked.name + "의 현재가는 " + won(cur) + "원입니다. 입력한 기준가 " + won(stopPrice) +
+             "원은 현재가보다 높아 등록 직후 ‘이탈’로 표시될 수 있습니다. 그래도 계속 진행할까요?",
+      yes  : "그대로 등록"
+    }, function(){ commitSave(stopPrice); });
+    return;
+  }
+
+  commitSave(stopPrice);
+}
+
+function commitSave(stopPrice){
+  var now = new Date().toISOString();
+  if (editingId) {
+    var it = findItem(editingId);
+    if (it) {
+      it.stopPrice = stopPrice;
+      it.updatedAt = now;
+      delete quotes[it.id];           // 기준가가 바뀌었으므로 시세 재생성
+    }
+  } else {
+    var obj = {
+      id: uuid(),
+      code: picked.code,
+      name: picked.name,
+      market: picked.market,
+      stopPrice: stopPrice,
+      createdAt: now,
+      updatedAt: now
+    };
+    items.push(obj);
+  }
+  save();
+  render();
+  closeModal();
+}
+
+/* ===========================================================
+   10. 이벤트 바인딩
+   =========================================================== */
+$("btnAdd").addEventListener("click", function(){ openModal(null); });
+$("btnCancel").addEventListener("click", closeModal);
+$("btnSave").addEventListener("click", handleSave);
+
+$("btnRefresh").addEventListener("click", function(){
+  refreshQuotes();
+  render();
+});
+
+$("btnPickedClear").addEventListener("click", function(){
+  picked = null;
+  $("fieldStock").hidden = false;
+  $("fieldPicked").hidden = true;
+  $("inpStock").value = "";
+  $("inpStock").focus();
+  clearErr();
+});
+
+/* 자동완성 입력 */
+$("inpStock").addEventListener("input", function(){
+  showAc(searchStocks(this.value));
+});
+$("inpStock").addEventListener("focus", function(){
+  showAc(searchStocks(this.value));
+});
+$("inpStock").addEventListener("keydown", function(e){
+  var box = $("acList");
+  if (box.hidden) { return; }
+  var n = acData.length;
+  if (e.key === "ArrowDown") {
+    e.preventDefault(); acIndex = (acIndex + 1) % Math.max(n,1); paintAcCursor();
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault(); acIndex = (acIndex - 1 + n) % Math.max(n,1); paintAcCursor();
+  } else if (e.key === "Enter") {
+    if (acIndex >= 0 && acData[acIndex]) { e.preventDefault(); pickStock(acData[acIndex]); }
+  } else if (e.key === "Escape") {
+    hideAc();
+  }
+});
+function paintAcCursor(){
+  var nodes = $("acList").querySelectorAll(".ac-item");
+  for (var i=0;i<nodes.length;i++){
+    if (i === acIndex) { nodes[i].classList.add("active"); }
+    else { nodes[i].classList.remove("active"); }
+  }
+}
+$("acList").addEventListener("mousedown", function(e){
+  var el = e.target.closest(".ac-item");
+  if (!el) { return; }
+  e.preventDefault();
+  var s = acData[Number(el.getAttribute("data-i"))];
+  if (s) { pickStock(s); }
+});
+
+/* 기준가 입력 : 숫자 이외 문자 즉시 정리 + 즉시 피드백 */
+$("inpPrice").addEventListener("input", function(){
+  var v = this.value.replace(/[^0-9.]/g, "");
+  if (v !== this.value) { this.value = v; }
+  if (v !== "" && Number(v) > 0) {
+    $("errPrice").classList.remove("show");
+    this.classList.remove("invalid");
+  }
+});
+$("inpPrice").addEventListener("keydown", function(e){
+  if (e.key === "Enter") { e.preventDefault(); handleSave(); }
+});
+
+/* 테이블 수정/삭제 */
+$("tbody").addEventListener("click", function(e){
+  var btn = e.target.closest("button[data-act]");
+  if (!btn) { return; }
+  var id  = btn.getAttribute("data-id");
+  var act = btn.getAttribute("data-act");
+  if (act === "edit") {
+    openModal(id);
+  } else if (act === "del") {
+    var it = findItem(id);
+    if (!it) { return; }
+    askConfirm({
+      title: "등록을 삭제할까요?",
+      text : it.name + "(" + it.code + ")의 손절 기준가 등록을 삭제합니다. 삭제한 내용은 되돌릴 수 없습니다.",
+      yes  : "삭제",
+      tone : "neutral"
+    }, function(){
+      items = items.filter(function(x){ return x.id !== id; });
+      delete quotes[id];
+      save();
+      render();
+    });
+  }
+});
+
+/* 확인 다이얼로그 */
+$("cfYes").addEventListener("click", function(){
+  var cb = confirmCb;
+  closeConfirm();
+  if (cb) { cb(); }
+});
+$("cfNo").addEventListener("click", closeConfirm);
+
+/* 오버레이 클릭 / ESC */
+$("modal").addEventListener("mousedown", function(e){ if (e.target === this) { closeModal(); } });
+$("confirmBox").addEventListener("mousedown", function(e){ if (e.target === this) { closeConfirm(); } });
+document.addEventListener("keydown", function(e){
+  if (e.key !== "Escape") { return; }
+  if (!$("confirmBox").hidden) { closeConfirm(); return; }
+  if (!$("modal").hidden) { closeModal(); }
+});
+document.addEventListener("mousedown", function(e){
+  if ($("acList").hidden) { return; }
+  if (!e.target.closest("#fieldStock")) { hideAc(); }
+});
+
+/* ===========================================================
+   11. 시작
+   =========================================================== */
+load();
+refreshQuotes();
+render();
+</script>
+</body>
+</html>
